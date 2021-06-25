@@ -11,19 +11,16 @@ env = gym.make('sudoku2-v0')
 
 #import pdb;pdb.set_trace()
 
-#model = PPO("MlpPolicy", env, verbose=1)
-model = A2C('MlpPolicy', env, verbose=1)
+model = PPO("MlpPolicy", env, verbose=1)
+#model = A2C('MlpPolicy', env, verbose=1)
 
-model = A2C.load("a2c_sudoku")
-
-model.set_env(env)
 
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10)
 print(f'Mean reward: {mean_reward} +/- {std_reward:.2f}')
 
-model.learn(total_timesteps=100000)
+model.learn(total_timesteps=10000)
 #                            1000000
-model.save("a2c_sudoku")
+model.save("a2c_sudoku_ppo")
 #import pdb;pdb.set_trace()
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10)
 print(f'Mean reward: {mean_reward} +/- {std_reward:.2f}')

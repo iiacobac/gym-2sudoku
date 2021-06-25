@@ -9,10 +9,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.env_util import make_vec_env
-from gym.envs.toy_text.frozen_lake import FrozenLakeEnv
 import gym_2sudoku
-
-
 
 from typing import Callable
 
@@ -41,46 +38,38 @@ def main():
 
     env_id = "sudoku2-v0"
 
-    num_cpu = 8  # Number of processes to use
-    # Create the vectorized environment
-    print("aca")
-    vec_env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
-    print("aca1")
-    model = A2C('MlpPolicy', vec_env, verbose=1)
-    #model = PPO("MlpPolicy", vec_env, verbose=1)
-    #model = A2C.load("a2c_sudoku")
+    num_cpu = 128 # Number of processes to use
 
-    model.set_env(vec_env)
-    print("aca2")
+    vec_env = make_vec_env(env_id, n_envs=num_cpu)
+
+    model = A2C('MlpPolicy', vec_env, verbose=1)
+
     # We create a separate environment for evaluation
     eval_env = gym.make(env_id)
-    print("aca3")
+
     # Random Agent, before training
     mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
     print(f'Mean reward: {mean_reward} +/- {std_reward:.2f}')
 
-    n_timesteps = 100000
+    mult = 100
+    n_timesteps = 10000 * mult
 
     # Multiprocessed RL Training
     start_time = time.time()
     model.learn(n_timesteps)
     total_time_multi = time.time() - start_time
 
-    model.save("a2c_sudoku_multi")
-
     mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
     print(f'Trained Mean reward: {mean_reward} +/- {std_reward:.2f}')
-
     print(f"Took {total_time_multi:.2f}s for multiprocessed version - {n_timesteps / total_time_multi:.2f} FPS")
-    #import pdb;pdb.set_trace()
-    obs = eval_env.reset()
-    done = False
-    for i in range(160):
-        action, _states = model.predict(obs, deterministic=False)
-        obs, reward, done, info = eval_env.step(action)
-        if done:
-            print(obs, reward, done, info)
-            obs = eval_env.reset()
+
+    ## Single Process RL Training
+    #single_process_model = A2C('MlpPolicy', env_id, verbose=0)
+    total_time_single = 51.99 * mult 
+    print(f"Took {total_time_single:.2f}s for single process version - {n_timesteps / total_time_single:.2f} FPS")
+    print("Multiprocessed training is {:.2f}x faster!".format(total_time_single / total_time_multi))
+
+
 
 if __name__ == '__main__':
     freeze_support()

@@ -16,6 +16,8 @@ class Sudoku2Env(gym.Env):
   """
   metadata = {'render.modes': ['human']}
   gold_set = set([1,2,3,4])
+  
+  init_sudoku = np.array([[1,2,3,4],[3,4,1,2],[2,1,4,3],[4,3,2,1]])
 
   def __init__(self) -> None:
     self.__version__ = "0.1.0"
@@ -24,8 +26,18 @@ class Sudoku2Env(gym.Env):
     # Define what the agent can do
     self.action_space = spaces.MultiDiscrete([4,4,4])
     self.observation_space = spaces.MultiDiscrete([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5])
-    self.square = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
-    self.count = 0
+    m = np.array(Sudoku2Env.init_sudoku, copy=True)
+    for i in range(5):
+        if random.random() < 0.5:
+            m = m.transpose()
+        if random.random() < 0.5:
+            m = np.rot90(m)
+    for k in range(random.randint(1,32)):
+        i = random.randint(0,3)
+        j = random.randint(0,3)
+        m[i][j] = 0
+    self.count = 16 - (m == 0).sum()
+    self.square = m.tolist()
     self.is_sudoku_finished = False
     self.valid_action_reward = 0
     self.seed()
@@ -62,15 +74,11 @@ class Sudoku2Env(gym.Env):
     """
     if self.is_sudoku_finished:
       raise RuntimeError("Episode is done")
-    #import pdb;pdb.set_trace()
     self._take_action(action)
     reward = self._get_reward() + self.valid_action_reward
     return np.array(self.square).reshape(16), reward, self.is_sudoku_finished, {}
 
   def _take_action(self, action: int) -> None:
-#    import pdb;pdb.set_trace()
-    #if random.random() < 0.1:
-    #   action = random.randint(0, 63)
     i = action[0]
     j = action[1]
     v = action[2] + 1
@@ -85,6 +93,7 @@ class Sudoku2Env(gym.Env):
       self.is_sudoku_finished = True
     
   def _get_reward(self) -> float:
+    #import pdb;pdb.set_trace()
     for i in range(4):
       if len(Sudoku2Env.gold_set.intersection(set(self.square[i]))) != 4:
         return 0
@@ -98,8 +107,18 @@ class Sudoku2Env(gym.Env):
 
   def reset(self):
     self.is_sudoku_finished = False
-    self.square = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
-    self.count = 0
+    m = np.array(Sudoku2Env.init_sudoku, copy=True)
+    for i in range(5):
+        if random.random() < 0.5:
+            m = m.transpose()
+        if random.random() < 0.5:
+            m = np.rot90(m)
+    for k in range(random.randint(1,32)):
+        i = random.randint(0,3)
+        j = random.randint(0,3)
+        m[i][j] = 0
+    self.count = 16 - (m == 0).sum()
+    self.square = m.tolist()
     self.valid_action_reward = 0
     self.seed()
     return np.array(self.square).reshape(16)
@@ -122,4 +141,6 @@ class Sudoku2Env(gym.Env):
     self.np_random, seed = seeding.np_random(seed)
     return [seed]
 
-
+if __name__ == '__main__':
+    env = Sudoku2Env()
+    #import pdb;pdb.set_trace()

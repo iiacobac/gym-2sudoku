@@ -37,7 +37,7 @@ def main():
 
 	env_id = "CartPole-v1"
 
-	num_cpu = 16  # Number of processes to use
+	num_cpu = 8  # Number of processes to use
 	# Create the vectorized environment
 	vec_env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 	#import pdb;pdb.set_trace()

@@ -20,37 +20,22 @@ from multiprocessing import Process, freeze_support
 
 from typing import Callable
 
-def make_env(env_id: str, rank: int, seed: int = 0) -> Callable:
-    """
-    Utility function for multiprocessed env.
-    
-    :param env_id: (str) the environment ID
-    :param num_env: (int) the number of environment you wish to have in subprocesses
-    :param seed: (int) the inital seed for RNG
-    :param rank: (int) index of the subprocess
-    :return: (Callable)
-    """
-    def _init() -> gym.Env:
-        env = gym.make(env_id)
-        env.seed(seed + rank)
-        return env
-    set_random_seed(seed)
-    return _init
 
 def main():
 
     env_id = "sudoku2-v0"
 
-    num_cpu = 8  # Number of processes to use
+    num_cpu = 64  # Number of processes to use
     # Create the vectorized environment
     print("aca")
-    vec_env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
+    #vec_env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
+    vec_env = make_vec_env(env_id, n_envs=num_cpu)
     print("aca1")
     model = A2C('MlpPolicy', vec_env, verbose=1)
     #model = PPO("MlpPolicy", vec_env, verbose=1)
     #model = A2C.load("a2c_sudoku")
-
-    model.set_env(vec_env)
+    env = gym.make("sudoku2-v0")
+    #model.set_env(vec_env)
     print("aca2")
     # We create a separate environment for evaluation
     eval_env = gym.make(env_id)
@@ -59,14 +44,14 @@ def main():
     mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
     print(f'Mean reward: {mean_reward} +/- {std_reward:.2f}')
 
-    n_timesteps = 100000
+    n_timesteps = 1000000
 
     # Multiprocessed RL Training
     start_time = time.time()
     model.learn(n_timesteps)
     total_time_multi = time.time() - start_time
 
-    model.save("a2c_sudoku_multi")
+    model.save("a2c_sudoku")
 
     mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
     print(f'Trained Mean reward: {mean_reward} +/- {std_reward:.2f}')
@@ -76,11 +61,13 @@ def main():
     obs = eval_env.reset()
     done = False
     for i in range(160):
-        action, _states = model.predict(obs, deterministic=False)
+        action, _states = model.predict(obs, deterministic=True)
         obs, reward, done, info = eval_env.step(action)
         if done:
-            print(obs, reward, done, info)
             obs = eval_env.reset()
+            print(obs, reward, done, info)
+
+
 
 if __name__ == '__main__':
     freeze_support()
